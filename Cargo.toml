@@ -1,0 +1,15 @@
+[package]
+name = "content-cas"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.74"
+description = "Content-addressed cache primitive: store bytes under their SHA-256 hex, retrieve by hex, atomic on-disk persistence. Zero deps."
+authors = ["Mukunda Rao Katta <mukunda.vjcs6@gmail.com>"]
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/MukundaKatta/content-cas"
+homepage = "https://github.com/MukundaKatta/content-cas"
+documentation = "https://docs.rs/content-cas"
+readme = "README.md"
+keywords = ["cache", "cas", "content-addressed", "embedding", "storage"]
+categories = ["caching", "filesystem"]
+exclude = [".github/*", "target/*"]
