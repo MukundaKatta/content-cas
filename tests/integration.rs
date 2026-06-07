@@ -62,3 +62,43 @@ fn path_for_uses_2char_prefix() {
     let p = cas.path_for("abcdef0123");
     assert!(p.to_string_lossy().ends_with("ab/cdef0123"));
 }
+
+#[test]
+fn short_keys_do_not_panic() {
+    // Callers may pass arbitrary keys to get/contains/remove; keys shorter
+    // than the 2-char shard prefix must be handled gracefully, not panic.
+    let cas = Cas::new(tmp_dir("short")).unwrap();
+    assert!(cas.get("").unwrap().is_none());
+    assert!(cas.get("a").unwrap().is_none());
+    assert!(!cas.contains(""));
+    assert!(!cas.contains("a"));
+    assert!(!cas.remove("").unwrap());
+    assert!(!cas.remove("a").unwrap());
+    // path_for itself must also not panic on short keys.
+    let _ = cas.path_for("");
+    let _ = cas.path_for("a");
+}
+
+#[test]
+fn concurrent_puts_of_same_content_succeed() {
+    use std::sync::Arc;
+    use std::thread;
+
+    let cas = Arc::new(Cas::new(tmp_dir("concurrent")).unwrap());
+    let payload = b"the same immutable blob".to_vec();
+
+    let handles: Vec<_> = (0..16)
+        .map(|_| {
+            let cas = Arc::clone(&cas);
+            let payload = payload.clone();
+            thread::spawn(move || cas.put(&payload).unwrap())
+        })
+        .collect();
+
+    let hashes: Vec<String> = handles.into_iter().map(|h| h.join().unwrap()).collect();
+
+    // Every writer agrees on the key and the stored bytes are intact.
+    let first = &hashes[0];
+    assert!(hashes.iter().all(|h| h == first));
+    assert_eq!(cas.get(first).unwrap().as_deref(), Some(&payload[..]));
+}
